@@ -4,11 +4,6 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Dr. Saad El Mahdy — Therapy Sessions',
   description: 'Book a therapy session with Dr. Saad El Mahdy. Find available slots, book online, and pay offline via Instapay or Vodafone Cash.',
-  openGraph: {
-    title: 'Dr. Saad El Mahdy — Therapy Sessions',
-    description: 'Book a therapy session with Dr. Saad El Mahdy.',
-    type: 'website',
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
