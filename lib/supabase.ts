@@ -12,13 +12,3 @@ export type Slot = {
   duration: number;
   is_available: boolean;
 };
-
-export type Booking = {
-  id: string;
-  slot_id: string;
-  patient_name: string;
-  phone: string;
-  session_type: string;
-  status: string;
-  created_at: string;
-};
