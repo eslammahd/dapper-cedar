@@ -1,5 +1,4 @@
 import type { Config } from 'tailwindcss';
-
 const config: Config = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,25 +8,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        teal: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
+        brand: {
+          50:  '#f0f7ff',
+          100: '#e0effe',
+          200: '#bae0fd',
+          300: '#7cc8fb',
+          400: '#36aaf5',
+          500: '#0c8de6',
+          600: '#006fc4',
+          700: '#0059a0',
+          800: '#044c85',
+          900: '#09406e',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
       },
     },
   },
   plugins: [],
 };
-
 export default config;

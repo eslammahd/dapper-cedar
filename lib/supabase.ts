@@ -19,11 +19,6 @@ export type Booking = {
   patient_name: string;
   phone: string;
   session_type: string;
-  notes: string | null;
   status: string;
   created_at: string;
-};
-
-export type BookingWithSlot = Booking & {
-  slots: Slot;
 };

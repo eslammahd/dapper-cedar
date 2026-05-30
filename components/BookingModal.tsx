@@ -1,136 +1,137 @@
 'use client';
-
 import { useState } from 'react';
-import type { Slot } from '@/lib/supabase';
-
-type Props = {
-  slot: Slot;
-  onClose: () => void;
-  onSuccess: (bookingId: string) => void;
-};
+import { supabase, Slot } from '@/lib/supabase';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':');
-  const hour = parseInt(h);
+  const hour = parseInt(h, 10);
   const ampm = hour >= 12 ? 'PM' : 'AM';
-  const display = hour % 12 === 0 ? 12 : hour % 12;
-  return `${display}:${m} ${ampm}`;
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${m} ${ampm}`;
 }
 
-export default function BookingModal({ slot, onClose, onSuccess }: Props) {
+const SESSION_TYPES = [
+  'Individual Therapy',
+  'Couples Therapy',
+  'Family Session',
+  'First Consultation',
+];
+
+interface Props {
+  slot: Slot;
+  onClose: () => void;
+  onBooked: (name: string, slotDate: string, slotTime: string) => void;
+}
+
+export default function BookingModal({ slot, onClose, onBooked }: Props) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [sessionType, setSessionType] = useState('Individual Therapy');
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [sessionType, setSessionType] = useState(SESSION_TYPES[0]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+    setError('');
+    if (!name.trim() || !phone.trim()) {
+      setError('Please fill in all fields.');
+      return;
+    }
+    setSubmitting(true);
 
-    const res = await fetch('/api/book', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        slot_id: slot.id,
-        patient_name: name,
-        phone,
-        session_type: sessionType,
-        notes,
-      }),
+    // Mark slot unavailable + create booking in one transaction-like sequence
+    const { error: bookingError } = await supabase.from('bookings').insert({
+      slot_id: slot.id,
+      patient_name: name.trim(),
+      phone: phone.trim(),
+      session_type: sessionType,
+      status: 'pending',
     });
 
-    const data = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data.error || 'Something went wrong. Please try again.');
-    } else {
-      onSuccess(data.booking.id);
+    if (bookingError) {
+      setError('This slot was just taken. Please choose another.');
+      setSubmitting(false);
+      return;
     }
+
+    const { error: slotError } = await supabase
+      .from('slots')
+      .update({ is_available: false })
+      .eq('id', slot.id);
+
+    if (slotError) {
+      setError('Something went wrong. Please try again.');
+      setSubmitting(false);
+      return;
+    }
+
+    onBooked(name.trim(), slot.date, slot.time);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl leading-none"
-          aria-label="Close"
-        >
-          ×
-        </button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div
+        className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-brand-700 to-brand-600 px-6 py-5 text-white">
+          <p className="text-brand-200 text-xs uppercase tracking-widest mb-1">Booking session</p>
+          <p className="text-xl font-bold">{formatDate(slot.date)}</p>
+          <p className="text-brand-100 text-sm mt-0.5">{formatTime(slot.time)} · {slot.duration} min</p>
+        </div>
 
-        <h2 className="text-xl font-bold text-gray-800 mb-1">Book This Slot</h2>
-        <p className="text-teal-600 font-medium mb-6">
-          {formatDate(slot.date)} at {formatTime(slot.time)} · {slot.duration} min
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
             <input
               type="text"
-              required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your full name"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
             <input
               type="tel"
-              required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="e.g. 010XXXXXXXX"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              placeholder="01xxxxxxxxx"
+              className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+              required
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Session Type</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Session Type</label>
             <select
               value={sessionType}
               onChange={(e) => setSessionType(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 bg-white"
             >
-              <option>Individual Therapy</option>
-              <option>Couples Therapy</option>
-              <option>Initial Consultation</option>
+              {SESSION_TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Anything you'd like Dr. Saad to know beforehand"
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
-            />
-          </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-              {error}
-            </div>
-          )}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white font-semibold py-3 rounded-full transition text-sm"
+            disabled={submitting}
+            className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-semibold rounded-lg py-3 transition-colors"
           >
-            {loading ? 'Booking…' : 'Confirm Booking'}
+            {submitting ? 'Booking…' : 'Confirm Booking'}
+          </button>
+          <button type="button" onClick={onClose} className="w-full text-sm text-slate-400 hover:text-slate-600 py-1">
+            Cancel
           </button>
         </form>
       </div>

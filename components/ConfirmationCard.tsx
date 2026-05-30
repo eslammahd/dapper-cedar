@@ -1,8 +1,4 @@
-import type { BookingWithSlot } from '@/lib/supabase';
-
-type Props = {
-  booking: BookingWithSlot;
-};
+'use client';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -11,76 +7,79 @@ function formatDate(dateStr: string) {
 
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(':');
-  const hour = parseInt(h);
+  const hour = parseInt(h, 10);
   const ampm = hour >= 12 ? 'PM' : 'AM';
-  const display = hour % 12 === 0 ? 12 : hour % 12;
-  return `${display}:${m} ${ampm}`;
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${m} ${ampm}`;
 }
 
-export default function ConfirmationCard({ booking }: Props) {
-  const slot = booking.slots;
+interface Props {
+  name: string;
+  slotDate: string;
+  slotTime: string;
+  onBookAnother: () => void;
+}
 
+export default function ConfirmationCard({ name, slotDate, slotTime, onBookAnother }: Props) {
   return (
-    <div className="w-full max-w-lg">
-      {/* Success header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 text-teal-600 text-3xl mb-4">
-          ✓
+    <main className="min-h-screen bg-gradient-to-br from-brand-700 to-brand-900 flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        {/* Green success bar */}
+        <div className="bg-green-500 px-6 py-5 text-white text-center">
+          <div className="text-4xl mb-2">✅</div>
+          <h2 className="text-xl font-bold">Booking Confirmed!</h2>
+          <p className="text-green-100 text-sm mt-1">We'll see you soon, {name.split(' ')[0]}.</p>
         </div>
-        <h1 className="text-2xl font-bold text-gray-800">Booking Confirmed!</h1>
-        <p className="text-gray-500 mt-1">We'll see you soon, {booking.patient_name.split(' ')[0]}.</p>
-      </div>
 
-      {/* Booking details */}
-      <div className="bg-white rounded-2xl shadow p-6 mb-6">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Appointment Details</h2>
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-600 text-sm">Doctor</span>
-            <span className="text-gray-800 font-medium text-sm">Dr. Saad El Mahdy</span>
+        {/* Details */}
+        <div className="px-6 py-6">
+          <div className="bg-slate-50 rounded-xl p-4 mb-6 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Patient</span>
+              <span className="font-semibold text-slate-800">{name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Date</span>
+              <span className="font-semibold text-slate-800">{formatDate(slotDate)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Time</span>
+              <span className="font-semibold text-slate-800">{formatTime(slotTime)}</span>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 text-sm">Date</span>
-            <span className="text-gray-800 font-medium text-sm">{formatDate(slot.date)}</span>
+
+          {/* Payment instructions */}
+          <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">💳 Payment Instructions</h3>
+          <p className="text-xs text-slate-500 mb-3">Please send your session fee before the appointment using one of these methods:</p>
+
+          <div className="space-y-3">
+            <div className="border border-slate-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🏦</span>
+                <span className="font-semibold text-sm text-slate-800">Instapay</span>
+              </div>
+              <p className="text-xs text-slate-500">Send to IPA: <span className="font-mono font-semibold text-slate-700">dr.saad.elmahdy</span></p>
+            </div>
+
+            <div className="border border-slate-200 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">📱</span>
+                <span className="font-semibold text-sm text-slate-800">Vodafone Cash</span>
+              </div>
+              <p className="text-xs text-slate-500">Send to: <span className="font-mono font-semibold text-slate-700">01XXXXXXXXXX</span></p>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 text-sm">Time</span>
-            <span className="text-gray-800 font-medium text-sm">{formatTime(slot.time)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 text-sm">Duration</span>
-            <span className="text-gray-800 font-medium text-sm">{slot.duration} minutes</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 text-sm">Session Type</span>
-            <span className="text-gray-800 font-medium text-sm">{booking.session_type}</span>
-          </div>
+
+          <p className="text-xs text-slate-400 mt-4 text-center">After payment, you're all set — we meet at your booked time. 🤝</p>
+
+          <button
+            onClick={onBookAnother}
+            className="mt-6 w-full border border-brand-300 text-brand-700 hover:bg-brand-50 font-semibold rounded-lg py-2.5 text-sm transition-colors"
+          >
+            ← Back to slots
+          </button>
         </div>
       </div>
-
-      {/* Payment instructions */}
-      <div className="bg-teal-50 border border-teal-200 rounded-2xl p-6 mb-6">
-        <h2 className="text-sm font-semibold text-teal-800 uppercase tracking-wide mb-4">💳 Payment Instructions</h2>
-        <p className="text-teal-700 text-sm mb-4">Please complete your payment before the session using one of the methods below:</p>
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl p-4 border border-teal-100">
-            <p className="font-semibold text-gray-800 text-sm mb-1">📲 Instapay</p>
-            <p className="text-gray-600 text-sm">IPA: <span className="font-mono font-medium text-gray-900">saad.elmahdy</span></p>
-          </div>
-          <div className="bg-white rounded-xl p-4 border border-teal-100">
-            <p className="font-semibold text-gray-800 text-sm mb-1">📱 Vodafone Cash</p>
-            <p className="text-gray-600 text-sm">Number: <span className="font-mono font-medium text-gray-900">010XXXXXXXX</span></p>
-          </div>
-        </div>
-        <p className="text-teal-600 text-xs mt-4">Send a screenshot of your payment to confirm. Dr. Saad will reach out to you at the provided phone number.</p>
-      </div>
-
-      {/* Booking reference */}
-      <div className="text-center">
-        <p className="text-xs text-gray-400 mb-1">Booking Reference</p>
-        <p className="font-mono text-sm text-gray-600">{booking.id}</p>
-        <a href="/" className="mt-4 inline-block text-teal-600 text-sm hover:underline">← Book another slot</a>
-      </div>
-    </div>
+    </main>
   );
 }
